@@ -1,0 +1,56 @@
+name: Manual Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      service:
+        description: 'Base service to deploy (leave empty for all)'
+        required: false
+        type: choice
+        options:
+          - ''
+          - minio
+          - haproxy
+          - certbot
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Set up environment variables from secrets
+        run: |
+          echo "Setting up environment variables from secrets"
+          echo "MINIO_ROOT_USER=${{ secrets.MINIO_ROOT_USER || 'minioadmin' }}" >> .env
+          echo "MINIO_ROOT_PASSWORD=${{ secrets.MINIO_ROOT_PASSWORD || 'minioadmin' }}" >> .env
+
+      - name: Copy files to VPS
+        run: |
+          # Add VPS host to known hosts
+          mkdir -p ~/.ssh
+          ssh-keyscan ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+
+          # Create necessary directories on VPS
+          ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} "mkdir -p ~/mlops-infra/haproxy ~/mlops-infra/certbot/conf ~/mlops-infra/certbot/www"
+
+          # Copy files to VPS
+          scp -r docker-compose.base.yaml .env haproxy/haproxy.cfg ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:~/mlops-infra/
+          scp -r haproxy/* ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:~/mlops-infra/haproxy/
+
+      - name: Deploy Base Services on VPS
+        run: |
+          if [ -z "${{ github.event.inputs.service }}" ]; then
+            echo "Deploying all base services on VPS"
+            ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} "cd ~/mlops-infra && docker compose -f docker-compose.base.yaml --env-file .env up -d"
+          else
+            echo "Deploying base service: ${{ github.event.inputs.service }} on VPS"
+            ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} "cd ~/mlops-infra && docker compose -f docker-compose.base.yaml --env-file .env up -d ${{ github.event.inputs.service }}"
+          fi
