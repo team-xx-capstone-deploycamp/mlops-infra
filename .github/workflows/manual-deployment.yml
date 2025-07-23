@@ -12,28 +12,6 @@ on:
           - minio
           - nginx
           - certbot
-      domain:
-        description: 'Domain name (e.g., domain.example.com)'
-        required: false
-        type: string
-      service_name:
-        description: 'Service name for domain configuration'
-        required: false
-        type: string
-      service_port:
-        description: 'Service port for domain configuration'
-        required: false
-        type: string
-      enable_ssl:
-        description: 'Enable SSL for domain'
-        required: false
-        type: boolean
-        default: true
-      admin_email:
-        description: 'Email for Let''s Encrypt'
-        required: false
-        type: string
-        default: 'admin@example.com'
 
 jobs:
   deploy:
@@ -53,6 +31,9 @@ jobs:
           echo "Setting up environment variables from secrets"
           echo "MINIO_ROOT_USER=${{ secrets.MINIO_ROOT_USER || 'minioadmin' }}" >> .env
           echo "MINIO_ROOT_PASSWORD=${{ secrets.MINIO_ROOT_PASSWORD || 'minioadmin' }}" >> .env
+          echo "MINIO_DOMAIN=${{ secrets.MINIO_DOMAIN || 'minio.mydomain.com' }}" >> .env
+          echo "MINIO_SERVER_URL=${{ secrets.MINIO_SERVER_URL || 'https://minio.mydomain.com' }}" >> .env
+          echo "MINIO_BROWSER_REDIRECT_URL=${{ secrets.MINIO_BROWSER_REDIRECT_URL || 'https://console.minio.mydomain.com' }}" >> .env
 
       - name: Copy files to VPS
         run: |
@@ -77,54 +58,3 @@ jobs:
             echo "Deploying base service: ${{ github.event.inputs.service }} on VPS"
             ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} "cd ~/mlops-infra && docker compose -f docker-compose.base.yaml --env-file .env up -d ${{ github.event.inputs.service }}"
           fi
-
-      - name: Domain Management
-        if: ${{ github.event.inputs.domain != '' }}
-        run: |
-          echo "Managing domain: ${{ github.event.inputs.domain }}"
-
-          # Set default values if not provided
-          DOMAIN="${{ github.event.inputs.domain }}"
-          SERVICE_NAME="${{ github.event.inputs.service_name || 'app' }}"
-          SERVICE_PORT="${{ github.event.inputs.service_port || '8080' }}"
-          ENABLE_SSL="${{ github.event.inputs.enable_ssl || 'true' }}"
-          ADMIN_EMAIL="${{ github.event.inputs.admin_email || 'admin@example.com' }}"
-
-          # Connect to VPS and run domain management
-          ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} "cd ~/mlops-infra && \
-
-          # Check if domain configuration already exists
-          if ls nginx/conf.d | grep -q \"${DOMAIN}.conf\"; then
-            echo \"Domain configuration already exists for ${DOMAIN}\"
-
-            # Check if it's using HTTPS
-            if grep -q \"listen 443 ssl\" nginx/conf.d/${DOMAIN}.conf; then
-              echo \"HTTPS is already enabled for ${DOMAIN}\"
-
-              # Check if SSL certificate needs renewal
-              if docker compose exec -T certbot certbot certificates | grep -q \"${DOMAIN}\"; then
-                EXPIRY=\$(docker compose exec -T certbot certbot certificates | grep -A 2 \"${DOMAIN}\" | grep \"Expiry\" | awk '{print \$2}')
-                CURRENT_DATE=\$(date +%Y-%m-%d)
-                EXPIRY_DATE=\$(date -d \"\${EXPIRY}\" +%Y-%m-%d)
-                DAYS_REMAINING=\$(( ( \$(date -d \"\${EXPIRY_DATE}\" +%s) - \$(date -d \"\${CURRENT_DATE}\" +%s) ) / 86400 ))
-
-                if [ \${DAYS_REMAINING} -lt 30 ]; then
-                  echo \"SSL certificate for ${DOMAIN} expires in \${DAYS_REMAINING} days. Renewing...\"
-                  docker compose exec -T certbot certbot renew --cert-name ${DOMAIN}
-                else
-                  echo \"SSL certificate for ${DOMAIN} is valid for \${DAYS_REMAINING} more days. No renewal needed.\"
-                fi
-              else
-                echo \"No SSL certificate found for ${DOMAIN}. Obtaining new certificate...\"
-                bash ./scripts/ssl-manager.sh get-cert ${DOMAIN} ${ADMIN_EMAIL}
-              fi
-            else
-              echo \"HTTPS is not enabled for ${DOMAIN}. Enabling SSL...\"
-              if [ \"${ENABLE_SSL}\" = \"true\" ]; then
-                bash ./scripts/ssl-manager.sh enable-ssl ${DOMAIN} ${SERVICE_NAME} ${SERVICE_PORT} ${ADMIN_EMAIL}
-              fi
-            fi
-          else
-            echo \"No configuration found for ${DOMAIN}. Creating new configuration...\"
-            bash ./scripts/add-domain.sh ${DOMAIN} ${SERVICE_NAME} ${SERVICE_PORT} ${ENABLE_SSL} ${ADMIN_EMAIL}
-          fi"

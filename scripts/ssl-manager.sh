@@ -36,11 +36,11 @@ update_domain_to_https() {
     
     generate_config "$domain" "$service_name" "$service_port" "true"
     
-    docker compose exec nginx nginx -t
+    docker exec -it nginx nginx -t
     
     if [ $? -eq 0 ]; then
         echo "✓ Nginx configuration is valid"
-        docker compose exec nginx nginx -s reload
+        docker exec -it nginx nginx -s reload
         echo "✓ Nginx reloaded with new SSL configuration"
         return 0
     else

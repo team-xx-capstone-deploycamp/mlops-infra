@@ -18,7 +18,7 @@ add_new_domain() {
     
     # Step 2: Reload nginx to apply HTTP config
     echo "Step 2: Reloading nginx with HTTP configuration..."
-    docker compose exec nginx nginx -t && docker compose exec nginx nginx -s reload
+    docker exec -it nginx nginx -t && docker exec -it nginx nginx -s reload
     
     if [ $? -ne 0 ]; then
         echo "❌ Failed to reload nginx with HTTP configuration"
