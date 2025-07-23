@@ -10,7 +10,7 @@ on:
         options:
           - ''
           - minio
-          - haproxy
+          - nginx
           - certbot
 
 jobs:
