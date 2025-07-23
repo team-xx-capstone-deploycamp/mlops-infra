@@ -9,7 +9,7 @@ get_ssl_certificate() {
     echo "Getting SSL certificate for $domain..."
     
     # Get SSL certificate using certbot
-    docker compose run --rm certbot certonly \
+    docker compose -f docker-compose.base.yaml run --rm certbot certonly \
         --webroot \
         --webroot-path=/var/www/certbot \
         --email "$email" \
