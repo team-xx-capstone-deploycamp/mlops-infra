@@ -12,11 +12,18 @@ generate_config() {
     
     if [ "$ssl_enabled" = "true" ]; then
         # Use HTTPS template
-        template_file="nginx/templates/https.template"
+        if [ "$service_name" = 'minio' && "$service_port" = '9001' ]; then
+            template_file="nginx/templates/https.console-minio.template"
+        else
+            template_file="nginx/templates/https.template"
+        fi
         echo "Using HTTPS template"
     else
-        # Use HTTP template
-        template_file="nginx/templates/http.template"
+        if [ "$service_name" = 'minio' && "$service_port" = '9001' ]; then
+            template_file="nginx/templates/http.console-minio.template"
+        else
+            template_file="nginx/templates/http.template"
+        fi
         echo "Using HTTP template"
     fi
     
