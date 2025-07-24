@@ -56,7 +56,7 @@ services:
       - 5432
     volumes:
       - ./postgres-data:/var/lib/postgresql/data
-  
+
   mlflow:
     restart: always
     build: ./mlflow
@@ -68,19 +68,24 @@ services:
       - POSTGRES_HOST=${POSTGRES_HOST:-postgres:5432}
       - AWS_ACCESS_KEY_ID=${MINIO_USER:-minio_user}
       - AWS_SECRET_ACCESS_KEY=${MINIO_PASSWORD:-minio_password}
-      - MLFLOW_S3_ENDPOINT_URL=${MINIO_DOMAIN:-http://minio:9000}
+      - MLFLOW_S3_ENDPOINT_URL=${MINIO_LOCAL_DOMAIN:-http://minio:9000}
+      - MLFLOW_ADMIN_USERNAME=${MLFLOW_ADMIN_USERNAME:-admin}
+      - MLFLOW_ADMIN_PASSWORD=${MLFLOW_ADMIN_PASSWORD:-password}
     ports:
         - "5000"
     volumes:
       - mlflow_data:/mlruns
+      - ./mlflow/auth_config.yaml:/app/auth_config.yaml
     command: |
       mlflow server \
         --backend-store-uri postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}/${POSTGRES_DB} \
-        --artifacts-destination s3://bucket \
+        --artifacts-destination s3://mlflow \
         --host 0.0.0.0 \
-        --port 5000
+        --port 5000 \
+        --auth-config /app/auth_config.yaml
     depends_on:
       - minio
+      - postgres
 
 volumes:
   minio_data:

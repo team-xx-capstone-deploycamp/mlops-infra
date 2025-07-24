@@ -12,6 +12,8 @@ on:
           - minio
           - nginx
           - certbot
+          - postgres
+          - mlflow
 
 jobs:
   deploy:
@@ -29,11 +31,25 @@ jobs:
       - name: Set up environment variables from secrets
         run: |
           echo "Setting up environment variables from secrets"
+          # MinIO environment variables
           echo "MINIO_ROOT_USER=${{ secrets.MINIO_ROOT_USER || 'minioadmin' }}" >> .env
           echo "MINIO_ROOT_PASSWORD=${{ secrets.MINIO_ROOT_PASSWORD || 'minioadmin' }}" >> .env
           echo "MINIO_DOMAIN=${{ secrets.MINIO_DOMAIN || 'minio.mydomain.com' }}" >> .env
+          echo "MINIO_USER=${{ secrets.MINIO_ROOT_USER || 'minioadmin' }}" >> .env
+          echo "MINIO_PASSWORD=${{ secrets.MINIO_ROOT_PASSWORD || 'minioadmin' }}" >> .env
+          echo "MINIO_LOCAL_DOMAIN=${{ secrets.MINIO_LOCAL_DOMAIN || 'http://minio:9000' }}" >> .env
           echo "MINIO_SERVER_URL=${{ secrets.MINIO_SERVER_URL || 'https://minio.mydomain.com' }}" >> .env
           echo "MINIO_BROWSER_REDIRECT_URL=${{ secrets.MINIO_BROWSER_REDIRECT_URL || 'https://console.minio.mydomain.com' }}" >> .env
+
+          # PostgreSQL environment variables
+          echo "POSTGRES_USER=${{ secrets.POSTGRES_USER || 'myuser' }}" >> .env
+          echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD || 'mypassword' }}" >> .env
+          echo "POSTGRES_DB=${{ secrets.POSTGRES_DB || 'mydb' }}" >> .env
+          echo "POSTGRES_HOST=${{ secrets.POSTGRES_HOST || 'postgres:5432' }}" >> .env
+
+          # MLFlow environment variables
+          echo "MLFLOW_ADMIN_USERNAME=${{ secrets.MLFLOW_ADMIN_USERNAME || 'admin' }}" >> .env
+          echo "MLFLOW_ADMIN_PASSWORD=${{ secrets.MLFLOW_ADMIN_PASSWORD || 'password' }}" >> .env
 
       - name: Copy files to VPS
         run: |
@@ -42,12 +58,13 @@ jobs:
           ssh-keyscan ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
 
           # Create necessary directories on VPS
-          ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} "mkdir -p ~/mlops-infra/nginx/conf.d ~/mlops-infra/nginx/templates ~/mlops-infra/certbot/conf ~/mlops-infra/certbot/www ~/mlops-infra/scripts"
+          ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} "mkdir -p ~/mlops-infra/nginx/conf.d ~/mlops-infra/nginx/templates ~/mlops-infra/certbot/conf ~/mlops-infra/certbot/www ~/mlops-infra/scripts ~/mlops-infra/mlflow"
 
           # Copy files to VPS
           scp -r docker-compose.base.yaml .env ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:~/mlops-infra/
           scp -r nginx/* ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:~/mlops-infra/nginx/
           scp -r scripts/* ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:~/mlops-infra/scripts/
+          scp -r mlflow/* ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:~/mlops-infra/mlflow/
 
       - name: Deploy Base Services on VPS
         run: |
