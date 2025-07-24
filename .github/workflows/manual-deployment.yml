@@ -50,6 +50,7 @@ jobs:
           # MLFlow environment variables
           echo "MLFLOW_ADMIN_USERNAME=${{ secrets.MLFLOW_ADMIN_USERNAME || 'admin' }}" >> .env
           echo "MLFLOW_ADMIN_PASSWORD=${{ secrets.MLFLOW_ADMIN_PASSWORD || 'password' }}" >> .env
+          echo "POSTGRES_AUTH_HOST=${{ secrets.POSTGRES_AUTH_HOST || 'auth_db:5432' }}" >> .env
 
       - name: Copy files to VPS
         run: |
@@ -65,6 +66,11 @@ jobs:
           scp -r nginx/* ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:~/mlops-infra/nginx/
           scp -r scripts/* ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:~/mlops-infra/scripts/
           scp -r mlflow/* ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:~/mlops-infra/mlflow/
+
+      - name: Generate MLFlow auth config
+        run: |
+          # Generate auth_config.ini from template using envsubst
+          ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} "cd ~/mlops-infra && export $(cat .env | xargs) && envsubst < mlflow/auth_config.ini.template > mlflow/auth_config.ini"
 
       - name: Deploy Base Services on VPS
         run: |
