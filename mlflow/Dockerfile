@@ -1,19 +1,21 @@
-FROM python:3.11-slim
+FROM python:3.13-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    g++ \
+    gcc \
+    python3-dev \
+    gettext-base \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --no-cache-dir \
+    mlflow==3.1.4 \
+    mlflow[auth] \
+    psycopg2-binary
 
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    libpq-dev \
-    gcc \
-    && rm -rf /var/lib/apt/lists/*
-
-COPY requirements.txt /app/
-RUN pip install --no-cache-dir -r requirements.txt
-
-COPY . /app
+COPY auth_config.ini.template /app/
 
 RUN chmod -R 777 /app
 RUN mkdir -p /mlflow && chmod -R 777 /mlflow
-
-EXPOSE 5000
