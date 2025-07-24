@@ -49,9 +49,9 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-myuser}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mypassword}
-      POSTGRES_DB: ${POSTGRES_DB:-mydb}
+      - POSTGRES_USER=${POSTGRES_USER:-myuser}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-mypassword}
+      - POSTGRES_DB=${POSTGRES_DB:-mydb}
     ports:
       - 5432
     volumes:
@@ -61,13 +61,21 @@ services:
     restart: always
     build: ./mlflow
     container_name: mlflow
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-myuser}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-mypassword}
+      - POSTGRES_DB=${POSTGRES_DB:-mydb}
+      - POSTGRES_HOST=${POSTGRES_HOST:-postgres:5432}
+      - AWS_ACCESS_KEY_ID=${MINIO_USER:-minio_user}
+      - AWS_SECRET_ACCESS_KEY=${MINIO_PASSWORD:-minio_password}
+      - MLFLOW_S3_ENDPOINT_URL=${MINIO_DOMAIN:-http://minio:9000}
     ports:
         - "5000"
     volumes:
       - ./mlruns:/mlruns
     command: |
       mlflow server \
-        --backend-store-uri postgresql://user:password@postgres:5432/mlflowdb \
+        --backend-store-uri postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}/${POSTGRES_DB} \
         --artifacts-destination s3://bucket \
         --host 0.0.0.0 \
         --port 5000
