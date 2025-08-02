@@ -1,6 +1,6 @@
 [mlflow]
 default_permission: READ
-database_uri: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_AUTH_HOST}/${POSTGRES_DB}
+database_uri: postgresql://${MLFLOW_AUTH_DB_USER}:${MLFLOW_AUTH_DB_PASSWORD}@${POSTGRES_AUTH_HOST}/${MLFLOW_AUTH_DB_NAME}
 admin_username: ${MLFLOW_ADMIN_USERNAME}
 admin_password: ${MLFLOW_ADMIN_PASSWORD}
 authorization_function: mlflow.server.auth:authenticate_request_basic_auth

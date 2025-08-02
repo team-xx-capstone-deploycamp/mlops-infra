@@ -86,9 +86,9 @@ services:
     build: ./mlflow
     container_name: mlflow
     environment:
-      - POSTGRES_USER=${POSTGRES_USER:-myuser}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-mypassword}
-      - POSTGRES_DB=${POSTGRES_DB:-mydb}
+      - MLFLOW_METADATA_DB_USER=${MLFLOW_METADATA_DB_USER:-mlflow_metadata_user}
+      - MLFLOW_METADATA_DB_PASSWORD=${MLFLOW_METADATA_DB_PASSWORD:-mlflow_metadata_password}
+      - MLFLOW_METADATA_DB_NAME=${MLFLOW_METADATA_DB_NAME:-mlflow_metadata}
       - POSTGRES_HOST=${POSTGRES_HOST:-postgres:5432}
       - AWS_ACCESS_KEY_ID=${MINIO_USER:-minio_user}
       - AWS_SECRET_ACCESS_KEY=${MINIO_PASSWORD:-minio_password}
@@ -98,6 +98,9 @@ services:
       - MLFLOW_AUTH_CONFIG_PATH=${MLFLOW_AUTH_CONFIG_PATH:-/app/auth_config.ini}
       - MLFLOW_FLASK_SERVER_SECRET_KEY=${MLFLOW_FLASK_SERVER_SECRET_KEY:-mysecretkey}
       - MLFLOW_LOGGING_LEVEL=DEBUG
+      - MLFLOW_AUTH_DB_USER=${MLFLOW_AUTH_DB_USER:-mlflow_auth_user}
+      - MLFLOW_AUTH_DB_PASSWORD=${MLFLOW_AUTH_DB_PASSWORD:-mlflow_auth_password}
+      - MLFLOW_AUTH_DB_NAME=${MLFLOW_AUTH_DB_NAME:-mlflow_auth}
     expose:
       - 5000
     volumes:
@@ -105,7 +108,7 @@ services:
       - ./mlflow/auth_config.ini:/app/auth_config.ini
     command: >
       mlflow server 
-        --backend-store-uri postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}/${POSTGRES_DB}
+        --backend-store-uri postgresql://${MLFLOW_METADATA_DB_USER}:${MLFLOW_METADATA_DB_PASSWORD}@${POSTGRES_HOST}/${MLFLOW_METADATA_DB_NAME}
         --artifacts-destination s3://bucket 
         --host 0.0.0.0 
         --port 5000
@@ -114,7 +117,6 @@ services:
       - minio
       - minio-create-bucket
       - postgres
-      - auth_db
 
 volumes:
   minio_data:

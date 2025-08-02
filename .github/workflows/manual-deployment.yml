@@ -73,6 +73,17 @@ jobs:
             echo "MLFLOW_ADMIN_USERNAME=${{ secrets.MLFLOW_ADMIN_USERNAME || 'admin' }}" >> .env
             echo "MLFLOW_ADMIN_PASSWORD=${{ secrets.MLFLOW_ADMIN_PASSWORD || 'password' }}" >> .env
             echo "POSTGRES_AUTH_HOST=${{ secrets.POSTGRES_AUTH_HOST || 'auth_db:5432' }}" >> .env
+
+            # MLFlow database variables (if not already set by postgres service)
+            if [ "${{ github.event.inputs.service }}" == "mlflow" ]; then
+              echo "POSTGRES_HOST=${{ secrets.POSTGRES_HOST || 'postgres:5432' }}" >> .env
+              echo "MLFLOW_METADATA_DB_NAME=${{ secrets.MLFLOW_METADATA_DB_NAME || 'mlflow_metadata' }}" >> .env
+              echo "MLFLOW_AUTH_DB_NAME=${{ secrets.MLFLOW_AUTH_DB_NAME || 'mlflow_auth' }}" >> .env
+              echo "MLFLOW_METADATA_DB_USER=${{ secrets.MLFLOW_METADATA_DB_USER || 'mlflow_metadata_user' }}" >> .env
+              echo "MLFLOW_METADATA_DB_PASSWORD=${{ secrets.MLFLOW_METADATA_DB_PASSWORD || 'mlflow_metadata_password' }}" >> .env
+              echo "MLFLOW_AUTH_DB_USER=${{ secrets.MLFLOW_AUTH_DB_USER || 'mlflow_auth_user' }}" >> .env
+              echo "MLFLOW_AUTH_DB_PASSWORD=${{ secrets.MLFLOW_AUTH_DB_PASSWORD || 'mlflow_auth_password' }}" >> .env
+            fi
           fi
 
       - name: Copy files to VPS
