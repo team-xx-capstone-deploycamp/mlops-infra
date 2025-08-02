@@ -45,7 +45,7 @@ jobs:
             echo "MINIO_BROWSER_REDIRECT_URL=${{ secrets.MINIO_BROWSER_REDIRECT_URL || 'https://console.minio.mydomain.com' }}" >> .env
           fi
 
-          if [ "${{ github.event.inputs.service }}" == "postgres" ] || [ "${{ github.event.inputs.service }}" == "" ]; then
+          if [ "${{ github.event.inputs.service }}" == "postgres" ] || [ "${{ github.event.inputs.service }}" == "mlflow" ] || [ "${{ github.event.inputs.service }}" == "" ]; then
             # PostgreSQL environment variables
             echo "POSTGRES_USER=${{ secrets.POSTGRES_USER || 'myuser' }}" >> .env
             echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD || 'mypassword' }}" >> .env
