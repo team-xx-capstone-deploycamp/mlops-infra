@@ -31,26 +31,49 @@ jobs:
       - name: Set up environment variables from secrets
         run: |
           echo "Setting up environment variables from secrets"
-          # MinIO environment variables
-          echo "MINIO_ROOT_USER=${{ secrets.MINIO_ROOT_USER || 'minioadmin' }}" >> .env
-          echo "MINIO_ROOT_PASSWORD=${{ secrets.MINIO_ROOT_PASSWORD || 'minioadmin' }}" >> .env
-          echo "MINIO_DOMAIN=${{ secrets.MINIO_DOMAIN || 'minio.mydomain.com' }}" >> .env
-          echo "MINIO_USER=${{ secrets.MINIO_ROOT_USER || 'minioadmin' }}" >> .env
-          echo "MINIO_PASSWORD=${{ secrets.MINIO_ROOT_PASSWORD || 'minioadmin' }}" >> .env
-          echo "MINIO_LOCAL_DOMAIN=${{ secrets.MINIO_LOCAL_DOMAIN || 'http://minio:9000' }}" >> .env
-          echo "MINIO_SERVER_URL=${{ secrets.MINIO_SERVER_URL || 'https://minio.mydomain.com' }}" >> .env
-          echo "MINIO_BROWSER_REDIRECT_URL=${{ secrets.MINIO_BROWSER_REDIRECT_URL || 'https://console.minio.mydomain.com' }}" >> .env
 
-          # PostgreSQL environment variables
-          echo "POSTGRES_USER=${{ secrets.POSTGRES_USER || 'myuser' }}" >> .env
-          echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD || 'mypassword' }}" >> .env
-          echo "POSTGRES_DB=${{ secrets.POSTGRES_DB || 'mydb' }}" >> .env
-          echo "POSTGRES_HOST=${{ secrets.POSTGRES_HOST || 'postgres:5432' }}" >> .env
+          # Create .env file based on the service being deployed
+          if [ "${{ github.event.inputs.service }}" == "minio" ] || [ "${{ github.event.inputs.service }}" == "postgres" ] || [ "${{ github.event.inputs.service }}" == "" ]; then
+            # MinIO environment variables
+            echo "MINIO_ROOT_USER=${{ secrets.MINIO_ROOT_USER || 'minioadmin' }}" >> .env
+            echo "MINIO_ROOT_PASSWORD=${{ secrets.MINIO_ROOT_PASSWORD || 'minioadmin' }}" >> .env
+            echo "MINIO_DOMAIN=${{ secrets.MINIO_DOMAIN || 'minio.mydomain.com' }}" >> .env
+            echo "MINIO_USER=${{ secrets.MINIO_ROOT_USER || 'minioadmin' }}" >> .env
+            echo "MINIO_PASSWORD=${{ secrets.MINIO_ROOT_PASSWORD || 'minioadmin' }}" >> .env
+            echo "MINIO_LOCAL_DOMAIN=${{ secrets.MINIO_LOCAL_DOMAIN || 'http://minio:9000' }}" >> .env
+            echo "MINIO_SERVER_URL=${{ secrets.MINIO_SERVER_URL || 'https://minio.mydomain.com' }}" >> .env
+            echo "MINIO_BROWSER_REDIRECT_URL=${{ secrets.MINIO_BROWSER_REDIRECT_URL || 'https://console.minio.mydomain.com' }}" >> .env
+          fi
 
-          # MLFlow environment variables
-          echo "MLFLOW_ADMIN_USERNAME=${{ secrets.MLFLOW_ADMIN_USERNAME || 'admin' }}" >> .env
-          echo "MLFLOW_ADMIN_PASSWORD=${{ secrets.MLFLOW_ADMIN_PASSWORD || 'password' }}" >> .env
-          echo "POSTGRES_AUTH_HOST=${{ secrets.POSTGRES_AUTH_HOST || 'auth_db:5432' }}" >> .env
+          if [ "${{ github.event.inputs.service }}" == "postgres" ] || [ "${{ github.event.inputs.service }}" == "" ]; then
+            # PostgreSQL environment variables
+            echo "POSTGRES_USER=${{ secrets.POSTGRES_USER || 'myuser' }}" >> .env
+            echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD || 'mypassword' }}" >> .env
+            echo "POSTGRES_DB=${{ secrets.POSTGRES_DB || 'mydb' }}" >> .env
+            echo "POSTGRES_HOST=${{ secrets.POSTGRES_HOST || 'postgres:5432' }}" >> .env
+
+            # Additional PostgreSQL variables for db-init.sql
+            echo "MLFLOW_METADATA_DB_NAME=${{ secrets.MLFLOW_METADATA_DB_NAME || 'mlflow_metadata' }}" >> .env
+            echo "MLFLOW_AUTH_DB_NAME=${{ secrets.MLFLOW_AUTH_DB_NAME || 'mlflow_auth' }}" >> .env
+            echo "LUIGI_DB_NAME=${{ secrets.LUIGI_DB_NAME || 'luigi' }}" >> .env
+            echo "APP_DB_NAME=${{ secrets.APP_DB_NAME || 'app' }}" >> .env
+
+            echo "MLFLOW_METADATA_DB_USER=${{ secrets.MLFLOW_METADATA_DB_USER || 'mlflow_metadata_user' }}" >> .env
+            echo "MLFLOW_METADATA_DB_PASSWORD=${{ secrets.MLFLOW_METADATA_DB_PASSWORD || 'mlflow_metadata_password' }}" >> .env
+            echo "MLFLOW_AUTH_DB_USER=${{ secrets.MLFLOW_AUTH_DB_USER || 'mlflow_auth_user' }}" >> .env
+            echo "MLFLOW_AUTH_DB_PASSWORD=${{ secrets.MLFLOW_AUTH_DB_PASSWORD || 'mlflow_auth_password' }}" >> .env
+            echo "LUIGI_DB_USER=${{ secrets.LUIGI_DB_USER || 'luigi_user' }}" >> .env
+            echo "LUIGI_DB_PASSWORD=${{ secrets.LUIGI_DB_PASSWORD || 'luigi_password' }}" >> .env
+            echo "APP_DB_USER=${{ secrets.APP_DB_USER || 'app_user' }}" >> .env
+            echo "APP_DB_PASSWORD=${{ secrets.APP_DB_PASSWORD || 'app_password' }}" >> .env
+          fi
+
+          if [ "${{ github.event.inputs.service }}" == "mlflow" ] || [ "${{ github.event.inputs.service }}" == "" ]; then
+            # MLFlow environment variables
+            echo "MLFLOW_ADMIN_USERNAME=${{ secrets.MLFLOW_ADMIN_USERNAME || 'admin' }}" >> .env
+            echo "MLFLOW_ADMIN_PASSWORD=${{ secrets.MLFLOW_ADMIN_PASSWORD || 'password' }}" >> .env
+            echo "POSTGRES_AUTH_HOST=${{ secrets.POSTGRES_AUTH_HOST || 'auth_db:5432' }}" >> .env
+          fi
 
       - name: Copy files to VPS
         run: |
@@ -59,18 +82,26 @@ jobs:
           ssh-keyscan ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
 
           # Create necessary directories on VPS
-          ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} "mkdir -p ~/mlops-infra/nginx/conf.d ~/mlops-infra/nginx/templates ~/mlops-infra/certbot/conf ~/mlops-infra/certbot/www ~/mlops-infra/scripts ~/mlops-infra/mlflow"
+          ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} "mkdir -p ~/mlops-infra/nginx/conf.d ~/mlops-infra/nginx/templates ~/mlops-infra/certbot/conf ~/mlops-infra/certbot/www ~/mlops-infra/scripts ~/mlops-infra/mlflow ~/mlops-infra/postgres"
 
           # Copy files to VPS
           scp -r docker-compose.base.yaml .env ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:~/mlops-infra/
           scp -r nginx/* ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:~/mlops-infra/nginx/
           scp -r scripts/* ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:~/mlops-infra/scripts/
           scp -r mlflow/* ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:~/mlops-infra/mlflow/
+          scp -r postgres/* ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:~/mlops-infra/postgres/
 
       - name: Generate MLFlow auth config
+        if: ${{ github.event.inputs.service == 'mlflow' || github.event.inputs.service == '' }}
         run: |
           # Generate auth_config.ini from template using envsubst
           ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} "cd ~/mlops-infra && export $(cat .env | xargs) && envsubst < mlflow/auth_config.ini.template > mlflow/auth_config.ini"
+
+      - name: Process Postgres init script
+        if: ${{ github.event.inputs.service == 'postgres' || github.event.inputs.service == '' }}
+        run: |
+          # Process db-init.sql with environment variables
+          ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} "cd ~/mlops-infra && export $(cat .env | xargs) && envsubst < postgres/db-init.sql > postgres/db-init.sql.tmp && mv postgres/db-init.sql.tmp postgres/db-init.sql"
 
       - name: Deploy Base Services on VPS
         run: |
