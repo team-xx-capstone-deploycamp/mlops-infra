@@ -1,5 +1,4 @@
 services:
-  # Node Exporter - Host metrics
   node-exporter:
     image: prom/node-exporter:latest
     container_name: node-exporter
@@ -16,7 +15,6 @@ services:
     ports:
       - "9100:9100"
 
-  # cAdvisor - Container metrics (Internal only)
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:latest
     container_name: cadvisor
@@ -28,33 +26,23 @@ services:
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
       - /dev/disk/:/dev/disk:ro
-    # No ports section - only accessible via Docker network
     devices:
       - /dev/kmsg
 
-  # PostgreSQL Exporter (Internal only)
   postgres-exporter:
     image: prometheuscommunity/postgres-exporter:latest
     container_name: postgres-exporter
     restart: unless-stopped
     environment:
       DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER:-myuser}:${POSTGRES_PASSWORD:-mypassword}@postgres:5432/${POSTGRES_DB:-mydb}?sslmode=disable"
-    # No ports section - only accessible via Docker network
-    depends_on:
-      - postgres
 
-  # Nginx Prometheus Exporter (Internal only)
   nginx-exporter:
     image: nginx/nginx-prometheus-exporter:latest
     container_name: nginx-exporter
     restart: unless-stopped
     command:
       - -nginx.scrape-uri=http://nginx:8081/nginx_status
-    # No ports section - only accessible via Docker network
-    depends_on:
-      - nginx
 
-  # Prometheus (Internal only - no public port exposure)
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
@@ -69,7 +57,6 @@ services:
       - '--web.console.templates=/etc/prometheus/consoles'
       - '--web.enable-lifecycle'
 
-  # Grafana
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
