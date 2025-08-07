@@ -1,0 +1,49 @@
+name: Monitoring Deployment
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Set up environment variables from secrets
+        run: |
+          echo "Setting up environment variables from secrets"
+
+          # PostgreSQL environment variables (needed for postgres-exporter)
+          echo "POSTGRES_USER=${{ secrets.POSTGRES_USER || 'myuser' }}" >> .env
+          echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD || 'mypassword' }}" >> .env
+          echo "POSTGRES_DB=${{ secrets.POSTGRES_DB || 'mydb' }}" >> .env
+
+          # Grafana environment variables
+          echo "GF_SECURITY_ADMIN_PASSWORD=${{ secrets.GF_SECURITY_ADMIN_PASSWORD || 'admin123' }}" >> .env
+
+      - name: Copy files to VPS
+        run: |
+          # Add VPS host to known hosts
+          mkdir -p ~/.ssh
+          ssh-keyscan ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+
+          # Create necessary directories on VPS
+          ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} "mkdir -p ~/mlops-infra/prometheus ~/mlops-infra/grafana/provisioning/dashboards ~/mlops-infra/grafana/provisioning/datasources"
+
+          # Copy monitoring files to VPS
+          scp -r docker-compose.monitoring.yml .env ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:~/mlops-infra/
+          scp -r prometheus/* ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:~/mlops-infra/prometheus/
+          scp -r grafana/provisioning/dashboards/* ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:~/mlops-infra/grafana/provisioning/dashboards/
+          scp -r grafana/provisioning/datasources/* ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:~/mlops-infra/grafana/provisioning/datasources/
+
+      - name: Deploy Monitoring Services on VPS
+        run: |
+          echo "Deploying monitoring services on VPS"
+          ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} "cd ~/mlops-infra && docker compose -f docker-compose.monitoring.yml --env-file .env up -d"
