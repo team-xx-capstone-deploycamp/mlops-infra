@@ -1,6 +1,7 @@
 # MLOps Infrastructure
 
 [![Manual Deployment](https://github.com/team-xx-capstone-deploycamp/mlops-infra/actions/workflows/manual-deployment.yml/badge.svg)](https://github.com/team-xx-capstone-deploycamp/mlops-infra/actions/workflows/manual-deployment.yml)
+[![Monitoring Deployment](https://github.com/team-xx-capstone-deploycamp/mlops-infra/actions/workflows/monitoring-deployment.yml/badge.svg)](https://github.com/team-xx-capstone-deploycamp/mlops-infra/actions/workflows/monitoring-deployment.yml)
 
 This repository contains the infrastructure for MLOps using Docker Compose.
 
