@@ -11,7 +11,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN pip install --no-cache-dir \
     mlflow==3.1.4 \
     mlflow[auth] \
-    psycopg2-binary
+    psycopg2-binary \
+    boto3
 
 WORKDIR /app
 

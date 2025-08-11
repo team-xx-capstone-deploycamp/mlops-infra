@@ -14,6 +14,8 @@ services:
       - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($|/)'
     ports:
       - "9100:9100"
+    networks:
+      - shared_network
 
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:latest
@@ -28,6 +30,8 @@ services:
       - /dev/disk/:/dev/disk:ro
     devices:
       - /dev/kmsg
+    networks:
+      - shared_network
 
   postgres-exporter:
     image: prometheuscommunity/postgres-exporter:latest
@@ -35,6 +39,8 @@ services:
     restart: unless-stopped
     environment:
       DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER:-myuser}:${POSTGRES_PASSWORD:-mypassword}@postgres:5432/${POSTGRES_DB:-mydb}?sslmode=disable"
+    networks:
+      - shared_network
 
   nginx-exporter:
     image: nginx/nginx-prometheus-exporter:latest
@@ -42,6 +48,8 @@ services:
     restart: unless-stopped
     command:
       - -nginx.scrape-uri=http://nginx:8081/nginx_status
+    networks:
+      - shared_network
 
   prometheus:
     image: prom/prometheus:latest
@@ -56,6 +64,8 @@ services:
       - '--web.console.libraries=/etc/prometheus/console_libraries'
       - '--web.console.templates=/etc/prometheus/consoles'
       - '--web.enable-lifecycle'
+    networks:
+      - shared_network
 
   grafana:
     image: grafana/grafana:latest
@@ -68,7 +78,13 @@ services:
       - ./grafana/provisioning:/etc/grafana/provisioning
     ports:
       - "3000:3000"
+    networks:
+      - shared_network
 
 volumes:
   prometheus-data:
   grafana-data:
+
+networks:
+  shared_network:
+    external: true
