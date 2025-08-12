@@ -32,10 +32,6 @@ server {
     add_header X-Frame-Options DENY always;
     add_header X-Content-Type-Options nosniff always;
 
-    # Rate Limiting Configuration
-    limit_req zone=api_limit burst=10 nodelay;
-    limit_conn conn_limit 20;
-
     # Client Configuration
     client_max_body_size 1G;
     client_body_timeout 300s;
@@ -71,6 +67,10 @@ server {
 
     # Main application
     location / {
+        # Rate Limiting Configuration
+        limit_req zone=api_limit burst=10 nodelay;
+        limit_conn conn_limit 20;
+
         proxy_pass http://{{SERVICE_NAME}}:{{SERVICE_PORT}};
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
