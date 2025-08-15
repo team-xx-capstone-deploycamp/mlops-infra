@@ -1,0 +1,37 @@
+listen:
+  port: 4040
+  address: "0.0.0.0"
+
+consul:
+  enable: false
+
+namespaces:
+  - name: nginx
+    source:
+      files:
+        - /var/log/nginx/access.log
+    format: "$remote_addr - $remote_user [$time_local] \"$request\" $status $body_bytes_sent \"$http_referer\" \"$http_user_agent\""
+    labels:
+      service: "nginx"
+      environment: "production"
+    histogram_buckets: [.005, .01, .025, .05, .1, .25, .5, 1, 2.5, 5, 10]
+
+    # Define custom metrics
+    metrics_override:
+      - name: "response_time_seconds"
+        type: "histogram"
+        help: "Response time in seconds"
+        buckets: [.005, .01, .025, .05, .1, .25, .5, 1, 2.5, 5, 10]
+
+      - name: "response_size_bytes"
+        type: "histogram"
+        help: "Response size in bytes"
+        buckets: [100, 1000, 10000, 100000, 1000000]
+
+      - name: "http_requests_total"
+        type: "counter"
+        help: "Total HTTP requests"
+
+      - name: "http_response_size_bytes"
+        type: "counter"
+        help: "Total HTTP response bytes"

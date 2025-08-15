@@ -51,6 +51,18 @@ services:
     networks:
       - shared_network
 
+  nginx-log-exporter:
+    image: quay.io/martinhelmich/prometheus-nginxlog-exporter:v1.10.0
+    container_name: nginx-log-exporter
+    restart: unless-stopped
+    volumes:
+      - ./nginx-log-exporter:/etc/prometheus-nginxlog-exporter
+      - nginx-logs:/var/log/nginx:ro  # Mount nginx logs volume
+    ports:
+      - "4040:4040"
+    networks:
+      - shared_network
+
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
@@ -84,6 +96,7 @@ services:
 volumes:
   prometheus-data:
   grafana-data:
+  nginx-logs:
 
 networks:
   shared_network:
