@@ -32,6 +32,12 @@ scrape_configs:
   - job_name: 'nginx-logs'
     static_configs:
       - targets: [ 'nginx-log-exporter:4040' ]
+    metric_relabel_configs:
+      # Group status codes by their first digit (2xx, 3xx, 4xx, 5xx)
+      - source_labels: [status]
+        regex: '([2-5])\\d\\d'
+        target_label: status_class
+        replacement: '${1}xx'
 
   # MinIO metrics
   - job_name: 'minio'

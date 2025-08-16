@@ -10,7 +10,7 @@ namespaces:
     source:
       files:
         - /var/log/nginx/access.log
-    format: "$remote_addr - $remote_user [$time_local] \"$request\" $status $body_bytes_sent \"$http_referer\" \"$http_user_agent\""
+    format: "$remote_addr - $remote_user [$time_local] \"$request\" $status $body_bytes_sent \"$http_referer\" \"$http_user_agent\" \"$http_x_forwarded_for\" rt=$request_time uct=\"$upstream_connect_time\" uht=\"$upstream_header_time\" urt=\"$upstream_response_time\""
     labels:
       service: "nginx"
       environment: "production"
@@ -31,7 +31,36 @@ namespaces:
       - name: "http_requests_total"
         type: "counter"
         help: "Total HTTP requests"
+        labels:
+          - "status"
+          - "method"
 
       - name: "http_response_size_bytes"
         type: "counter"
         help: "Total HTTP response bytes"
+
+      - name: "http_response_status_total"
+        type: "counter"
+        help: "Total HTTP responses by status code"
+        labels:
+          - "status"
+
+      - name: "http_status_2xx_total"
+        type: "counter"
+        help: "Total HTTP 2xx responses"
+        filter: "$status =~ /^2\\d\\d$/"
+
+      - name: "http_status_3xx_total"
+        type: "counter"
+        help: "Total HTTP 3xx responses"
+        filter: "$status =~ /^3\\d\\d$/"
+
+      - name: "http_status_4xx_total"
+        type: "counter"
+        help: "Total HTTP 4xx responses"
+        filter: "$status =~ /^4\\d\\d$/"
+
+      - name: "http_status_5xx_total"
+        type: "counter"
+        help: "Total HTTP 5xx responses"
+        filter: "$status =~ /^5\\d\\d$/"
