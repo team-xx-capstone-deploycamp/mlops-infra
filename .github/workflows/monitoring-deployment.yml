@@ -35,11 +35,12 @@ jobs:
           ssh-keyscan ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
 
           # Create necessary directories on VPS
-          ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} "mkdir -p ~/mlops-infra/prometheus ~/mlops-infra/grafana/provisioning/dashboards ~/mlops-infra/grafana/provisioning/datasources"
+          ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} "mkdir -p ~/mlops-infra/{prometheus,nginx-log-exporter} ~/mlops-infra/grafana/provisioning/dashboards ~/mlops-infra/grafana/provisioning/datasources"
 
           # Copy monitoring files to VPS
           scp -r docker-compose.monitoring.yml .env.monitoring ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:~/mlops-infra/
           scp -r prometheus/* ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:~/mlops-infra/prometheus/
+          scp -r nginx-log-exporter/* ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:~/mlops-infra/nginx-log-exporter/
           scp -r grafana/provisioning/dashboards/* ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:~/mlops-infra/grafana/provisioning/dashboards/
           scp -r grafana/provisioning/datasources/* ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:~/mlops-infra/grafana/provisioning/datasources/
 
@@ -47,3 +48,7 @@ jobs:
         run: |
           echo "Deploying monitoring services on VPS"
           ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} "cd ~/mlops-infra && docker compose -f docker-compose.monitoring.yml --env-file .env.monitoring up -d"
+
+      - name: Reload Nginx Config
+        run: |
+          ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} "docker exec -it nginx nginx -t && docker exec -it nginx nginx -s reload"
