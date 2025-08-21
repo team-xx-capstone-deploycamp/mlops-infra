@@ -56,12 +56,18 @@ services:
     container_name: nginx-log-exporter
     restart: unless-stopped
     volumes:
-      - ./nginx-log-exporter:/etc/prometheus-nginxlog-exporter
+      - ./nginx-log-exporter/config.yml:/etc/prometheus-nginxlog-exporter/config.yml:ro
       - /var/log/nginx:/var/log/nginx:ro
     expose:
       - "4040"
     networks:
       - shared_network
+    command:
+      - -config-file=/etc/prometheus-nginxlog-exporter/config.yml
+      - -listen-address=0.0.0.0
+      - -listen-port=4040
+    environment:
+      - PROMETHEUS_NGINXLOG_EXPORTER_LOG_LEVEL=debug
 
   prometheus:
     image: prom/prometheus:latest
